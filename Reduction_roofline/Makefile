@@ -1,5 +1,5 @@
 CUDA_PATH ?= /usr/local/cuda
-NVCC := $(CUDA_PATH)/bin/nvcc
+NVCC := nvcc
 
 SRC := main.cu
 OBJ := main.o
