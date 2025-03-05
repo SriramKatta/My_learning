@@ -8,7 +8,6 @@ using mintime = std::nano;
 __global__ 
 void kernel(size_t N, double *a)
 {
-  int test = thre
   int start = threadIdx.x + blockDim.x * blockIdx.x;
   int stride = blockDim.x * gridDim.x;
   for (size_t i = start; i <= N; i += stride)
