@@ -41,6 +41,8 @@ void trasnspose_cpu(size_t N, VT *__restrict_arr M1, VT *__restrict_arr M2)
   }
 }
 
+
+
 template <typename VT>
 __global__ void trasnspose_V0(size_t N, VT *__restrict_arr M1, VT *__restrict_arr M2)
 {
@@ -53,6 +55,22 @@ __global__ void trasnspose_V0(size_t N, VT *__restrict_arr M1, VT *__restrict_ar
   }
   M2[col * N + row] = M1[row * N + col];
 }
+
+template <typename VT>
+__global__ void trasnspose_V1(size_t N, VT *__restrict_arr M1, VT *__restrict_arr M2)
+{
+  int row = blockIdx.x * blockDim.x + threadIdx.x;
+  int col = blockIdx.y * blockDim.y + threadIdx.y;
+
+  if (col >= N || row >= N)
+  {
+    return;
+  }
+  M2[col * N + row] = M1[row * N + col];
+}
+
+
+
 
 void check_matrix_transpose(size_t N, double *__restrict_arr M1, double *__restrict_arr M2)
 {
