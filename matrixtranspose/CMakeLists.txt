@@ -4,6 +4,7 @@ project(MyCUDAProject LANGUAGES CUDA CXX)
 # Set the CUDA standard
 set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+set(CMAKE_CUDA_ARCHITECTURES 80 86 )
 
 include_directories(header)
 # Add the executable
