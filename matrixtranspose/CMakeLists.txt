@@ -2,11 +2,10 @@ cmake_minimum_required(VERSION 3.18)
 project(MyCUDAProject LANGUAGES CUDA CXX)
 
 # Set the CUDA standard
-set(CMAKE_CUDA_STANDARD 14)
+set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
-
-
+include_directories(header)
 # Add the executable
 add_executable(my_cuda_executable main.cpp)
 
