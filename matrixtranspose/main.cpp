@@ -2,14 +2,18 @@
 #include "helpers.cuh"
 
 #include <stdio.h>
+#include <chrono>
+
+using Time = std::chrono::high_resolution_clock;
+using mintime = std::nano;
 
 #define WARMUP 20
 #define REP 30
 
-#define looprun(count)                                                  \
-  for (size_t i = 0; i < count; i++)                                    \
-  {                                                                     \
-    trasnspose_V0<<<blks, thpblk>>>(N, M1.getDevPtr(), M2.getDevPtr()); \
+#define looprun(count)                                                   \
+  for (size_t i = 0; i < count; i++)                                     \
+  {                                                                      \
+    trasnspose_V1 <<< blks, thpblk >>> (N, M1.getDevPtr(), M2.getDevPtr()); \
   }
 
 int main(int argc, char const *argv[])
@@ -17,7 +21,7 @@ int main(int argc, char const *argv[])
   size_t N = 0;
 
   if (argc != 2)
-    N = 1 << 13;
+    N = 1 << 14;
   else
     N = 1 << atoi(argv[1]);
 
@@ -37,17 +41,18 @@ int main(int argc, char const *argv[])
   cudaEventCreate(&start);
   cudaEventCreate(&stop);
 
-  cudaEventRecord(start, 0);
+  auto kernelstart = Time::now();
   looprun(REP);
-  cudaEventRecord(stop, 0);
-  cudaEventSynchronize(stop);
+  cudaDeviceSynchronize();
+  auto kernelend = Time::now();
 
-  M1.toHost();
+  double kerneltime = std::chrono::duration<double, mintime>(kernelend - kernelstart).count() / mintime::den;
 
-  float milliseconds = 0;
-  cudaEventElapsedTime(&milliseconds, start, stop);
-  float sec = (milliseconds * 1e3) / REP;
-  double GB = static_cast<double>(M1.getsizeinbytes()) / 1e9;
-  printf("Effective Bandwidth (GB/s): %4.5lf\n",  GB/ sec);
+  double arraydatasizeinGbytes = static_cast<double>(M1.getsizeinbytes()) / std::giga::num;
+
+  printf("bandwidth (GB/s) : %4.5lf \n", arraydatasizeinGbytes * 2 * REP / kerneltime);
+  M2.toHost();
+  check_matrix_transpose(N, M1.getHostPtr(), M2.getHostPtr());
+
   return 0;
 }
