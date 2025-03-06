@@ -3,40 +3,51 @@
 
 #include <stdio.h>
 
+#define WARMUP 20
+#define REP 30
+
+#define looprun(count)                                                  \
+  for (size_t i = 0; i < count; i++)                                    \
+  {                                                                     \
+    trasnspose_V0<<<blks, thpblk>>>(N, M1.getDevPtr(), M2.getDevPtr()); \
+  }
+
 int main(int argc, char const *argv[])
 {
-  size_t N = 5;
+  size_t N = 0;
+
+  if (argc != 2)
+    N = 1 << 13;
+  else
+    N = 1 << atoi(argv[1]);
 
   auto [blks, thpblk] = getGpuLaunchConfig(N);
   getLasterror;
-
   host_dev_arr<double> M1(N * N, true);
   host_dev_arr<double> M2(N * N);
-  host_dev_arr<double> M3(N * N);
   M1.toDevice();
-  double *M2_hos = M2.getHostPtr();
-  double *M2_dev = M2.getDevPtr();
 
-  #if 0
-  double *M1_hos = M1.getHostPtr();
-  double *M1_dev = M1.getDevPtr();
-  double *M3_hos = M3.getHostPtr();
-  double *M3_dev = M3.getDevPtr();
-  trasnspose_V0<<<blks, thpblk>>>(N, M1_dev, M2_dev);
-  printMatrix(N, M1_hos);
-  trasnspose_cpu(N, M1_hos, M3_hos);
-  
-  M2.toHost();
-  printMatrix(N, M2_hos);
-  printMatrix(N, M3_hos);
-  check_matrix_equality(N, M3_hos, M2_hos);
-#endif
+  size_t matrisizeinbytes = M1.getsizeinbytes();
 
-  matrix_fillinindex<<<blks, thpblk>>>(N, M2_dev);
-  getLasterror;
-  M2.toHost();
-  
-  printMatrix(N, M2_hos);
+  // warmup iterations
+  looprun(WARMUP)
 
+      cudaEvent_t start,
+      stop;
+  cudaEventCreate(&start);
+  cudaEventCreate(&stop);
+
+  cudaEventRecord(start, 0);
+  looprun(REP);
+  cudaEventRecord(stop, 0);
+  cudaEventSynchronize(stop);
+
+  M1.toHost();
+
+  float milliseconds = 0;
+  cudaEventElapsedTime(&milliseconds, start, stop);
+  float sec = (milliseconds * 1e3) / REP;
+  double GB = static_cast<double>(M1.getsizeinbytes()) / 1e9;
+  printf("Effective Bandwidth (GB/s): %4.5lf\n",  GB/ sec);
   return 0;
 }

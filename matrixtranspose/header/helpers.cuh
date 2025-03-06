@@ -44,6 +44,7 @@ public:
   {
     if (fillrand)
     {
+      printf("filling in random values\n");
       std::random_device rd;
       std::mt19937 gen(rd());                                // Mersenne Twister RNG
       std::uniform_real_distribution<double> dist(0.0, 1.0); // Range 1-100
@@ -74,6 +75,14 @@ public:
   VT *getDevPtr()
   {
     return this->dev;
+  }
+
+  size_t getcount() const {
+    return numelem;
+  }
+
+  size_t getsizeinbytes() const {
+    return numelem * sizeof(VT);
   }
 
   ~host_dev_arr()
