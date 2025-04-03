@@ -1,5 +1,6 @@
 #pragma once
 #include "helpers.cuh"
+#include <omp.h>
 
 template <typename VT>
 void fill_data(VT *ptr, size_t n_ele)

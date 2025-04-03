@@ -1,21 +1,17 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.22.1)
+project(CUDA_OpenMP_Project LANGUAGES CXX CUDA)
 
-
-project(
-	roofline_reduction 
-	LANGUAGES CXX CUDA
-	)
-	
-find_package(CUDA REQUIRED)
-find_package(CUDAToolkit REQUIRED)
-find_package(OpenMP REQUIRED)
-
+# Enable OpenMP
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(CMAKE_CUDA_ARCHITECTURES 80 86)
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Wno-deprecated-gpu-targets")
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+# Enable CUDA
+enable_language(CUDA)
+set(CMAKE_CUDA_STANDARD 17)
+set(CMAKE_CXX_STANDARD 17)
 
 
+find_package(OpenMP REQUIRED)
+
+# Define the executable
 include_directories(headers)
 add_subdirectory(src)

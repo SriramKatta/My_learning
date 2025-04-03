@@ -63,13 +63,16 @@ size_t sizeinbytes(size_t numelems)
 
 void dummy_threadfunc()
 {
-  int numthreads = 1;
+  int numthreads = 0;
+  #if _OPENMP
 #pragma omp parallel
 #pragma omp single
   numthreads = omp_get_num_threads();
 
+  std::cout << "OPENMP USED " << std::endl;
   std::cout << "number of threads used " << numthreads << std::endl;
-#ifdef _OPENMP
-  std::cout << "number of threads used " << numthreads << std::endl;
+  #else
+  std::cout << " OPENMP NOT USED " << std::endl;
+
 #endif
 }
