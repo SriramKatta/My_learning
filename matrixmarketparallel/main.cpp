@@ -1,5 +1,6 @@
 #include <cctype>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <mpi.h>
@@ -17,11 +18,25 @@ struct Entry {
   Entry(int r, int c, double v) : row(r), col(c), val(v) {}
 };
 
-std::vector<Entry> paralleldataload(std::ifstream &fin, int nnz, int rank,
+std::vector<Entry> paralleldataload(std::ifstream &fin, size_t &nrows,
+                                    size_t &ncols, size_t &nnz, int rank,
                                     int size, int filesize, int data_offset) {
+
+  std::string line;
+
+  data_offset = 0;
+  while (std::getline(fin, line)) {
+    data_offset += line.length() + 1; // +1 for newline character
+    if (!line.empty() && line[0] != '%')
+      break;
+  }
+  sscanf(line.c_str(), "%lu %lu %lu", &nrows, &ncols, &nnz);
+
+  // if (0 == rank) {
+  //   printf("rows %ld, cols %ld, nnz : %ld\n", nrows, ncols, nnz);
+  // }
   int numlines = nnz / size + ((nnz % size) > rank ? 1 : 0);
   MPI_Offset chunksize = (filesize - data_offset) / size;
-  std::string line;
   MPI_Offset currentoffset = data_offset + chunksize * rank;
   fin.seekg(currentoffset);
 
@@ -79,31 +94,14 @@ int main(int argc, char **argv) {
   std::string filename = argv[1];
 
   MPI_Offset data_offset = 0;
-  MPI_Offset filesize = 0;
+  MPI_Offset filesize = std::filesystem::file_size(filename);
   size_t nrows = 0, ncols = 0, nnz = 0;
-  MPI_File file;
-  MPI_File_open(MPI_COMM_WORLD, argv[1], MPI_MODE_RDONLY, MPI_INFO_NULL, &file);
-  MPI_File_get_size(file, &filesize);
-  MPI_File_close(&file);
 
   std::ifstream fin(filename);
-  std::string line;
-
-  data_offset = 0;
-  while (std::getline(fin, line)) {
-    data_offset += line.length() + 1; // +1 for newline character
-    if (!line.empty() && line[0] != '%')
-      break;
-  }
-  sscanf(line.c_str(), "%lu %lu %lu", &nrows, &ncols, &nnz);
-
-  if (0 == rank) {
-    printf("rows %ld, cols %ld, nnz : %ld\n", nrows, ncols, nnz);
-  }
 
   auto start = MPI_Wtime();
-  auto localchunk =
-      paralleldataload(fin, nnz, rank, size, filesize, data_offset);
+  auto localchunk = paralleldataload(fin, nrows, ncols, nnz, rank, size,
+                                     filesize, data_offset);
   auto end = MPI_Wtime();
 
   int localsize = localchunk.size();
@@ -112,11 +110,12 @@ int main(int argc, char **argv) {
   MPI_Reduce(&localsize, &globalsum, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
 
   if (0 == rank) {
-    printf("time taken : %lf\n", end - start);
+    double et = end - start;
+    printf("time taken : %lf | bandwidth : %lf\n", et, filesize / et / 1e9);
     printf("nnz == globalsum %d\n", nnz == globalsum);
   }
 
-  // printfilewithrank(localchunk, rank);
+  //printfilewithrank(localchunk, rank);
 
   MPI_Finalize();
   return 0;
