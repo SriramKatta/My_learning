@@ -94,7 +94,15 @@ int main(int argc, char **argv) {
   std::string filename = argv[1];
 
   MPI_Offset data_offset = 0;
-  MPI_Offset filesize = std::filesystem::file_size(filename);
+  MPI_Offset filesize;
+#if 0
+  filesize = std::filesystem::file_size(filename);
+#else
+  MPI_File fh;
+  MPI_File_open(MPI_COMM_WORLD, argv[1], MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+  MPI_File_get_size(fh, &filesize);
+  MPI_File_close(&fh);
+#endif
   size_t nrows = 0, ncols = 0, nnz = 0;
 
   std::ifstream fin(filename);
@@ -115,7 +123,7 @@ int main(int argc, char **argv) {
     printf("nnz == globalsum %d\n", nnz == globalsum);
   }
 
-  //printfilewithrank(localchunk, rank);
+  // printfilewithrank(localchunk, rank);
 
   MPI_Finalize();
   return 0;
